@@ -3,20 +3,21 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Npgsql;
 using System.Collections;
+using System.Net;
 using System.Net.Mime;
 using System.Threading.Tasks;
 
 namespace day2.Controllers
 {
     [ApiController]
-    [Route("[controller]s")]
-    public class KeyValController : ControllerBase
+    [Route("[controller]")]
+    public class KeyValsController : ControllerBase
     {
-        private readonly ILogger<KeyValController> _logger;
+        private readonly ILogger<KeyValsController> _logger;
         private KeyValContext context;
         //private static DbContextOptions<KeyValContext> options = DbContextOptionsBuilder<KeyValContext>.UseNpgsql("Host=127.0.0.1;Username=postgres;Password=abcd1234;Database=test")
         //private static PooledDbContextFactory<KeyValContext> dbCtxFactory = new(options: new DbContextOptions<KeyValContext>());
-        public KeyValController(ILogger<KeyValController> logger) {
+        public KeyValsController (ILogger<KeyValsController> logger) {
             this._logger = logger;
             this.context = new KeyValContext();
             //this.context = dbCtxFactory.CreateDbContext();
@@ -28,35 +29,36 @@ namespace day2.Controllers
             }
         }
 
-        [HttpGet("[controller]s")]
+        [HttpGet]
         public IAsyncEnumerable<KeyVal> Get()
         {
             var keyVals = context.KeyVals.AsAsyncEnumerable();
             return keyVals;
         }
 
-        [HttpGet("[controller]")]
-        public async Task<KeyVal> Get(int id)
+        [HttpGet("{id}")]
+        public async Task<ActionResult<KeyVal>> Get(int id)
         {
             var res = await context.KeyVals.FindAsync(id);
             if (res == null)
             {
-                throw new Exception("sadly it does not exist");
+                return NotFound();
+                //throw new Exception("sadly it does not exist");
             }
             return res;
         }
 
-        [HttpPost("[controller]")]
-        public async Task<int> Post(string val)
+        [HttpPost]
+        public async Task<int> Post(KeyVal_ValOnly val)
         {
-            KeyVal keyVal = new() { Val = val };
+            KeyVal keyVal = new() { Val = val.Val };
             context.Add(keyVal);
             await context.SaveChangesAsync(); 
-            return keyVal.Id;
+            return keyVal.Id; // TODO: return Created() status code too
         }
 
-        [HttpDelete("[controller]")]
-        public async Task<bool> Delete(int id)
+        [HttpDelete("{id}")]
+        public async Task<ActionResult> Delete(int id)
         {
             try
             {
@@ -66,22 +68,25 @@ namespace day2.Controllers
             }
             catch (Exception)
             {
-                return false;
+                return NotFound();
             }
-            return true;
+            return Ok();
         }
 
-        [HttpPut("[controller]")]
-        public async Task<bool> Put(KeyVal keyVal)
+        [HttpPut("{id}")]
+        public async Task<ActionResult> Put(int id, KeyVal_ValOnly val)
         {
+            KeyVal keyVal = new KeyVal { Id = id, Val = val.Val };
             try
             {
                 context.Update(keyVal);
                 await context.SaveChangesAsync();
-            } catch (Exception) {
-                return false;
             }
-            return true;
+            catch (Exception)
+            {
+                return BadRequest(); // TODO: use more appropriate status code
+            }
+            return Ok();
         }
 
         [HttpGet("test")]

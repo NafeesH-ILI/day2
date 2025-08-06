@@ -32,4 +32,9 @@ namespace day2
         [Column("val")]
         public string? Val { get; set; }
     }
+
+    public class KeyVal_ValOnly
+    {
+        public required string Val { get; set; }
+    }
 }
